@@ -170,6 +170,13 @@ func run(c *cli.Context) error {
 	}
 
 	// clean duplicate imports
+
+	logrus.Info("======================================originalVendor=========================================")
+	for _, packageImport := range trashConf.Imports {
+		logrus.Infof("Debugging, original import, package name %s", packageImport.Package)
+	}
+	logrus.Info("======================================originalVendor Fin=========================================")
+
 	importMap := map[string]conf.Import{}
 	for _, i := range extraImports {
 		importMap[i.Package] = i
@@ -185,6 +192,7 @@ func run(c *cli.Context) error {
 		for _, packageImport := range trashConf.Imports {
 			if packageImport.Package == extraImport.Package {
 				packageAlreadyImported = true
+				logrus.Infof("!!!!!!!!!!!!!!!Debugging, Found duplicate, name %s !!!!!!!!!!!!!!!!!!", packageImport.Package)
 				break
 			}
 		}
@@ -264,6 +272,8 @@ func updateTransitiveVendor(keep, update bool, trashDir, dir, targetDir string, 
 	}
 	for _, packageImport := range trashConf.Imports {
 		if packageImport.Transitive {
+			logrus.Info("======================================updateTransitiveVendor=========================================")
+			logrus.Infof("~~~Debugging, TransitiveImport %s.", packageImport.Package)
 			if alreadyImported[packageImport.Package] {
 				logrus.Warnf("Already searched transitive dep %s. Skipping", packageImport.Package)
 				continue
@@ -277,12 +287,16 @@ func updateTransitiveVendor(keep, update bool, trashDir, dir, targetDir string, 
 			if err != nil {
 				return extraImports, err
 			}
+			logrus.Infof("~~~Debugging, transitiveDependencies repo dir %s. len %v", repoDir, len(transitiveDependencies))
 			for _, transitiveDependency := range transitiveDependencies {
 				extraImports = append(extraImports, conf.Import{
 					Package: transitiveDependency.Name,
 					Version: transitiveDependency.Reference,
 					Repo:    transitiveDependency.Repository,
 				})
+				logrus.Infof("Debugging, transitiveDependency, package name %s, ref %s, repo %s.",
+					transitiveDependency.Name, transitiveDependency.Reference, transitiveDependency.Repository)
+
 			}
 			if len(transitiveDependencies) == 0 {
 				config, err := parseTransitiveVendor(repoDir)
@@ -296,6 +310,7 @@ func updateTransitiveVendor(keep, update bool, trashDir, dir, targetDir string, 
 				}
 				extraImports = append(extraImports, config.Imports...)
 			}
+			logrus.Info("======================================updateTransitiveVendor Fin=========================================")
 		}
 	}
 	return extraImports, nil
